@@ -19,6 +19,7 @@ public class BetsEntity {
     private String idBet;
     @ManyToOne
     private PlayerEntity playerEntityId;
+    private int number;
     private String result;
     @Builder.Default
     private LocalTime startBet = LocalTime.now();

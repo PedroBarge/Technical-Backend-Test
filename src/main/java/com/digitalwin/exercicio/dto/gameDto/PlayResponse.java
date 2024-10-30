@@ -14,5 +14,6 @@ public class PlayResponse {
     private String idBet;
     private LocalTime startBet;
     private LocalTime endBet;
+    private int number;
     private String result;
 }

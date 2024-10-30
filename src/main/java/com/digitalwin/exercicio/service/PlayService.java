@@ -31,7 +31,6 @@ public class PlayService {
 
     public PlayResponse startNewGame(PlayRequest playRequest) {
         int betValue = playRequest.getBetAmount();
-        String resultOddOrEven = createRandomNumberAndCheckIfIsEvenOrOdd();
         /*TODO; 1- verificar se o jogador ja existe em alguma aposta
                 2- Se existir devolver erro
                 3- Se não criar nova aposta com o Id do player
@@ -44,7 +43,7 @@ public class PlayService {
             return null;
         }
         //--
-        BetsEntity newBet = createBet(player, resultOddOrEven);
+        BetsEntity newBet = createBet(player);
         if (newBet.getResult().equals(playRequest.getType())) {
             repository.updateWalletByIdPlayer((player.get().getWallet() + (betValue * 2)), player.get().getIdPlayer());
         } else repository.updateWalletByIdPlayer((player.get().getWallet() - betValue), player.get().getIdPlayer());
@@ -53,24 +52,22 @@ public class PlayService {
                 .idBet(newBet.getIdBet())
                 .idPlayer(player.get().getIdPlayer())
                 .startBet(newBet.getStartBet())
-                .result(resultOddOrEven)
+                .number(newBet.getNumber())
+                .result(newBet.getResult())
                 .build();
     }
 
-    private static String createRandomNumberAndCheckIfIsEvenOrOdd() {
+    private BetsEntity createBet(Optional<PlayerEntity> player) {
         Random random = new Random();
         int number = random.nextInt();
         String resultOddOrEven;
         if (number % 2 == 0) {
             resultOddOrEven = "even";
         } else resultOddOrEven = "odd";
-        return resultOddOrEven;
-    }
-
-    private BetsEntity createBet(Optional<PlayerEntity> player, String number) {
         return betsRepository.save(BetsEntity.builder()
                 .playerEntityId(player.get())
-                .result(number)
+                .number(number)
+                .result(resultOddOrEven)
                 .build());
     }
 
