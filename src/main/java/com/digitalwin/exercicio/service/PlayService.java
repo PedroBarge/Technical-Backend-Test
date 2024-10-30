@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -36,19 +37,34 @@ public class PlayService {
             return ERROR_BAD_REQUEST;
         }
         //--Verificar se existe ja bet com o id do Player e se ainda esta em aberto a bet
-        Optional<BetsEntity> betIdWithPlayerId = betsRepository.findByPlayerEntityId_IdPlayer(player.get().getIdPlayer());
-        if (betIdWithPlayerId.isPresent() && (betIdWithPlayerId.get().getEndBet() == null)) {
+
+        List<BetsEntity> betIdWithPlayerId = betsRepository.findByPlayerEntityId_IdPlayer(player.get().getIdPlayer());
+        //estava a ter problemas com o Optional. Por isso decidi usar uma List e depois passar por uma StreamApi
+
+        if (betIdWithPlayerId.stream().anyMatch(bet -> bet.getEndBet() == null)) {
             return ERROR_BAD_REQUEST;
         }
+
         //--Verificar se tem saldo para fazer a aposta
         if (player.get().getWallet() < betValue) {
             return ERROR_BAD_REQUEST;
         }
         //--Nova bet
         BetsEntity newBet = createBet(player);
-        if (newBet.getResult().equals(playRequest.getType())) {
-            repository.updateWalletByIdPlayer((player.get().getWallet() + (betValue * 2)), player.get().getIdPlayer());
-        } else repository.updateWalletByIdPlayer((player.get().getWallet() - betValue), player.get().getIdPlayer());
+        int newValueWallet;
+        if (newBet.getResult().toLowerCase().equals(playRequest.getType())) {
+            //--Vitória
+            newValueWallet = player.get().getWallet() + (betValue * 2);
+            newBet.setResult("Won");
+        } else {
+            //--Derrota
+            newValueWallet = player.get().getWallet() - betValue;
+            newBet.setResult("Loose");
+        }
+        player.get().setWallet(newValueWallet);
+        repository.updateWalletByIdPlayer(newValueWallet,player.get().getIdPlayer());
+        String betResult = newBet.getResult().equals(playRequest.getType()) ? "Won" : "Loose"; //podia ter feito isto para ou outros
+        betsRepository.updateResultByIdBet(betResult,newBet.getIdBet());
 
         return ResponseEntity.ok(PlayResponse.builder()
                 .idBet(newBet.getIdBet())
@@ -61,7 +77,7 @@ public class PlayService {
 
     private BetsEntity createBet(Optional<PlayerEntity> player) {
         Random random = new Random();
-        int number = random.nextInt();
+        int number = random.nextInt(6);
         String resultOddOrEven;
         if (number % 2 == 0) {
             resultOddOrEven = "even";
@@ -78,13 +94,16 @@ public class PlayService {
         if (bets.isPresent()) {
             LocalTime time = LocalTime.now();
             PlayerEntity player = repository.getReferenceById(endGameDto.getIdPlayer());
-            betsRepository.updateEndBetByIdBetAndPlayerEntityId(time, endGameDto.getIdBet(), player);
+            bets.get().setEndBet(time);
+            betsRepository.updateEndGame(time, endGameDto.getIdBet(), player);
+            var info = bets.get();
             return PlayResponse.builder()
-                    .idPlayer(bets.get().getPlayerEntityId().getIdPlayer())
-                    .idBet(bets.get().getIdBet())
-                    .startBet(bets.get().getStartBet())
-                    .endBet(time)
-                    .result(bets.get().getResult())
+                    .idPlayer(info.getPlayerEntityId().getIdPlayer())
+                    .idBet(info.getIdBet())
+                    .startBet(info.getStartBet())
+                    .endBet(info.getEndBet())
+                    .number(info.getNumber())
+                    .result(info.getResult())
                     .build();
         }
         return null;

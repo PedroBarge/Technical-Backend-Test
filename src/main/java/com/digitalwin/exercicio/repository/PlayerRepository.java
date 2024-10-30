@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface PlayerRepository extends JpaRepository<PlayerEntity, String> {
+
     @Transactional
     @Modifying
     @Query("update PlayerEntity p set p.wallet = ?1 where p.idPlayer = ?2")
