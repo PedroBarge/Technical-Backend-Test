@@ -26,7 +26,7 @@ public class StartController {
     }
 
     @PostMapping("/play")
-    public PlayResponse newPlay(@RequestBody PlayRequest playRequest){
+    public ResponseEntity<PlayResponse> newPlay(@RequestBody PlayRequest playRequest){
         return service.startNewGame(playRequest);
     }
     @PostMapping("/endplay")
