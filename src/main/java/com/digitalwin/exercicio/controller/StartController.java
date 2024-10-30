@@ -20,7 +20,7 @@ public class StartController {
 
     private final PlayService service;
 
-    @GetMapping
+    @GetMapping("/createdefaultPlayer")
     public PlayerEntity defaultPlayer(){
         return service.defaultPlayer();
     }
